@@ -275,6 +275,27 @@ def health():
     return {"status": "ok", "service": "ivalicevera"}
 
 
+# ── Static Frontend ───────────────────────────────────────────────────────────
+
+STATIC_DIR = IVALICEVERA_DIR / "static"
+if STATIC_DIR.exists():
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+
+    # Mount static assets
+    app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+
+    # SPA fallback — serve index.html for all non-API routes
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(full_path: str):
+        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi"):
+            raise HTTPException(status_code=404)
+        index_file = STATIC_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+        return {"error": "Frontend not built. Run 'npm run build' in multivera-frontend."}
+
+
 # ── Run ──────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
