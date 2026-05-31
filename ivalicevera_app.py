@@ -52,7 +52,13 @@ DB_PATH = IVALICEVERA_DIR / "ivalicevera.db"
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
 SessionLocal = sessionmaker(bind=engine)
 
-# Create tables
+# ── Override MultiVera database to use ivalicevera.db ─────────────────────────
+import backend.database as _mv_db
+_mv_db.engine = engine
+_mv_db.SessionLocal = SessionLocal
+_mv_db.Base = Base
+
+# Create all tables (MultiVera models + any IvaliceVera additions)
 Base.metadata.create_all(engine)
 
 
