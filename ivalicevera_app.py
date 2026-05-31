@@ -291,6 +291,14 @@ if STATIC_DIR.exists():
     # Mount static assets
     app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
 
+    # Mount character portraits and backgrounds
+    chars_dir = STATIC_DIR / "characters"
+    if chars_dir.exists():
+        app.mount("/characters", StaticFiles(directory=str(chars_dir)), name="characters")
+    bg_dir = STATIC_DIR / "backgrounds"
+    if bg_dir.exists():
+        app.mount("/backgrounds", StaticFiles(directory=str(bg_dir)), name="backgrounds")
+
     # SPA fallback — serve index.html for all non-API routes
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_frontend(full_path: str):
