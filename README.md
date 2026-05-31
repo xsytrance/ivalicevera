@@ -2,24 +2,76 @@
 
 **Final Fantasy Tactics: The Ivalice Chronicles — Save File Analyzer & Character Chat**
 
-IvaliceVera parses FFT PC Remaster save files to extract party composition, story progress, and character data — then feeds it into [MultiVera](https://github.com/xsytrance/multivera) for immersive character chat.
+IvaliceVera parses FFT PC Remaster save files to extract party composition, story progress, and character data — then feeds it into [MultiVera](https://github.com/xsytrance/multivera) for immersive character chat with Ramza, Delita, Agrias, and the whole party.
 
 ## What It Does
 
-- **Parse FFT save files** (`.png` container → extracted `.sav` files via [FF16Tools](https://github.com/Nenkai/FF16Tools))
-- **Extract story progress** — chapter/scene detection from save header
-- **Identify party members** — both story characters (Ramza, Delita, Agrias...) and player-created characters
-- **Build character context** — feeds save data + FFT lore KB into MultiVera for character chat
+- **Parse FFT save files** — upload a save, get story progress + party members
+- **Auto-create MultiVera projects** — characters, commits, and story context from a save
+- **Character chat** — talk to Ramza or any party member, story-locked to the save's point in the game
+- **FFT lore KB** — full character profiles, relationships, story beats
 
 ## Quick Start
 
 ```bash
-# Parse a save file
-python save_parser.py /path/to/fftsave.bin
+# Install dependencies
+pip install fastapi sqlalchemy python-multipart uvicorn
 
-# Or auto-detect all saves in /home/xsyvps/fft-saves*/
-python save_parser.py
+# Run the server
+python ivalicevera_app.py
 ```
+
+API docs at `http://localhost:8787/docs`
+
+## API Endpoints
+
+### Save File Upload
+```
+POST /api/save/upload          — Upload & parse a save file
+POST /api/save/create-project  — Upload save → create full MultiVera project
+```
+
+### FFT Lore
+```
+GET /api/lore/characters              — List all FFT characters
+GET /api/lore/characters/{slug}       — Get character profile (e.g., ramza)
+GET /api/lore/commits                 — List story commits
+GET /api/lore/commits?phase=early     — Filter by story phase
+```
+
+### MultiVera (inherited)
+```
+GET    /api/projects                              — List projects
+POST   /api/projects                              — Create project
+GET    /api/projects/{id}                         — Get project
+DELETE /api/projects/{id}                         — Delete project
+
+GET    /api/projects/{id}/characters              — List characters
+POST   /api/projects/{id}/characters              — Create character
+POST   /api/projects/{id}/characters/extract      — Extract character from text (AI)
+GET    /api/characters/{id}                       — Get character profile
+PUT    /api/characters/{id}                       — Update character
+DELETE /api/characters/{id}                       — Delete character
+
+GET    /api/characters/{id}/commits               — List commits
+POST   /api/characters/{id}/commits               — Create commit
+GET    /api/commits/{id}                          — Get commit
+PUT    /api/commits/{id}                          — Update commit
+DELETE /api/commits/{id}                          — Delete commit
+
+POST   /api/chat                                  — Chat with a character
+GET    /api/conversations                         — List conversations
+GET    /api/conversations/{id}                    — Get conversation
+DELETE /api/conversations/{id}                    — Delete conversation
+```
+
+## How Character Chat Works
+
+1. Upload a save file → story phase detected (early/mid/late)
+2. Characters created from FFT lore KB (Ramza always present)
+3. Story commits created from save progress
+4. Chat with any character — they know only what they should know at that point
+5. Ramza won't spoil the Lucavi plot if you're chatting in Chapter 1
 
 ## Save File Format
 
@@ -35,27 +87,21 @@ Key findings:
 
 | File | Purpose |
 |------|---------|
-| `save_parser.py` | Main save file parser — extracts party, story progress, characters |
-| `FFT_LORE_KB.md` | FFT lore knowledge base — story, characters, world |
+| `ivalicevera_app.py` | FastAPI server — save upload, project creation, lore endpoints |
+| `save_parser.py` | FFT save file parser — extracts party, story progress, characters |
+| `lore_kb.py` | FFT character database + story commits |
+| `multivera_integration.py` | Builds MultiVera projects from save data |
+| `FFT_LORE_KB.md` | FFT lore knowledge base |
 | `FFT_REVERSE_ENGINEERING.md` | Complete save format documentation |
-| `fft_*_finder.py` | Analysis scripts for job ID, abilities, battle overlay, etc. |
-| `ghost_*.py` | Ghost character analysis utilities |
-| `TEST_PLAN.md` | Controlled test procedures for format discovery |
+| `ghost_*.py` | Ghost analysis utilities |
+| `fft_*_finder.py` | Analysis scripts (job, ability, overlay, etc.) |
 
-## MultiVera Integration
-
-IvaliceVera is designed to feed into [MultiVera](https://github.com/xsytrance/multivera) for character chat:
-
-1. Load save → extract party + story progress
-2. Look up character profiles from lore KB
-3. Generate system prompt with story context
-4. Chat with Ramza, Delita, Agrias, or any party member
-
-## Requirements
+## Dependencies
 
 - Python 3.11+
-- FF16Tools (Nenkai) for PNG container extraction
-- No other dependencies (stdlib only)
+- fastapi, sqlalchemy, python-multipart, uvicorn
+- [MultiVera](https://github.com/xsytrance/multivera) (backend/ directory)
+- [FF16Tools](https://github.com/Nenkai/FF16Tools) (for initial PNG extraction)
 
 ## License
 
