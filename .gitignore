@@ -5,3 +5,5 @@ output/
 .venv/
 venv/
 .env
+*.db
+*.sqlite
