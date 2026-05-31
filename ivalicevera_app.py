@@ -306,7 +306,7 @@ if STATIC_DIR.exists():
             raise HTTPException(status_code=404)
         index_file = STATIC_DIR / "index.html"
         if index_file.exists():
-            return FileResponse(str(index_file))
+            return FileResponse(str(index_file), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
         return {"error": "Frontend not built. Run 'npm run build' in multivera-frontend."}
 
 
