@@ -206,28 +206,45 @@ def _extract_player_characters(data):
                 continue
             seen_names.add(name)
             
-            # Extract stats (first 6 u16 values)
-            raw_hp = struct.unpack_from('<H', data, i + 12)[0]
-            raw_mp = struct.unpack_from('<H', data, i + 14)[0]
-            
+            # Extract all 46 uint16 values from the 92-byte stat block
+            stat_block = struct.unpack_from('<46H', data, i + 12)
+
             # Decode NEW encoding (values shifted << 8)
             if tail == b'\x10\x11\x00':
-                hp = raw_hp >> 8
-                mp = raw_mp >> 8
+                stats = [v >> 8 for v in stat_block]
                 encoding = 'NEW'
             else:
-                hp = raw_hp
-                mp = raw_mp
+                stats = list(stat_block)
                 encoding = 'STANDARD'
-            
-            characters.append({
+
+            # Known field mappings from reverse engineering:
+            # u16_00 = Max HP (gender-correlated)
+            # u16_01 = MP-related
+            # u16_03 = PA or Speed (gender-correlated)
+            # u16_04 = VIT or HP growth (gender-correlated)
+            # u16_12 = Always 128 (structural constant)
+            # u16_17 = Unit ID or job class identifier
+            # u16_23 = EXP or Gil
+            # u16_27-42 = Mirror of u16_03-18 (base vs current stats)
+            char_data = {
                 'name': name,
                 'offset': i,
-                'hp': hp,
-                'mp': mp,
+                'hp': stats[0],
+                'mp': stats[1],
                 'encoding': encoding,
                 'marker_id': f'{data[i]:02x}{data[i+1]:02x}',
-            })
+                'stats': {
+                    'hp': stats[0],
+                    'mp': stats[1],
+                    'pa_or_speed': stats[3],
+                    'vit_or_hpgrowth': stats[4],
+                    'unit_id_or_job': stats[17],
+                    'exp_or_gil': stats[23],
+                    'raw': stats,
+                },
+            }
+
+            characters.append(char_data)
         except (UnicodeDecodeError, struct.error):
             pass
     

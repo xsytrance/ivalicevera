@@ -152,12 +152,21 @@ async def create_project_from_save(
     try:
         # Build the MultiVera project from save data
         data = build_multivera_project(tmp_path)
-        
+
+        # Also parse raw save data for storage (for chat context)
+        raw_save = parse_save(tmp_path)
+        save_data = {
+            "story_progress": raw_save.get("story_progress", {}),
+            "player_characters": raw_save.get("player_characters", []),
+            "party_context": raw_save.get("party_context", {}),
+        }
+
         # 1. Create project in database
         project = Project(
             name=project_name,
             description=data["project"]["description"],
             sources=data["project"]["sources"],
+            save_data=save_data,
         )
         db.add(project)
         db.commit()
